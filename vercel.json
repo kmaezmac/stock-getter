@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/stocks.py": {
+      "runtime": "python3.11"
+    }
+  }
+}
