@@ -1,3 +1,4 @@
+from http.server import BaseHTTPRequestHandler
 import json
 import os
 from dotenv import load_dotenv
@@ -30,18 +31,25 @@ def get_stock_prices(symbols, fx_rate):
             })
     return results
 
-def handler(request, response):
-    try:
-        body = request.get_json()
-        symbols = body.get("symbols", [])
-        fx_rate = get_fx_rate()
-        prices = get_stock_prices(symbols, fx_rate)
-        response.status_code = 200
-        response.headers["Content-Type"] = "application/json"
-        response.body = json.dumps({
-            "fx_rate": fx_rate,
-            "results": prices
-        })
-    except Exception as e:
-        response.status_code = 500
-        response.body = json.dumps({"error": str(e)})
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        try:
+            data = json.loads(body)
+            symbols = data.get("symbols", [])
+            fx_rate = get_fx_rate()
+            prices = get_stock_prices(symbols, fx_rate)
+            response = {
+                "fx_rate": fx_rate,
+                "results": prices
+            }
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
